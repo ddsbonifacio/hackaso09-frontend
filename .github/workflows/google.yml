@@ -11,8 +11,6 @@ jobs:
   Build:
     runs-on: ubuntu-latest
     steps:
-      - name: npm install
-        uses: actions/setup-python@v2
 
       - name: Docker Login
         env:
