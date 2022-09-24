@@ -1,5 +1,5 @@
 # Nome do Workflow
-name: DevOpsLab Pipeline
+name: Frontend Pipeline - Hackathon
 
 # Evento que irá acionar a pipeline
 on: 
@@ -9,31 +9,39 @@ on:
 
 jobs:
   Build:
-    runs-on: ubuntu-latest
-    steps:
+      name: Build
+      runs-on: ubuntu-latest
+      steps: 
+        - name: Clone do Repositório
+          uses: actions/checkout@v2
 
-      - name: Docker Login
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          ARTIFACT_REGISTRY:  ${{ secrets.ARTIFACT_REGISTRY}}
-        run: | 
-          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > key.json
-          cat key.json | docker login -u _json_key --password-stdin ${{ secrets.ARTIFACT_REGISTRY }}
-      - name: Build Image & Push
-        env: 
-          ARTIFACT_REGISTRY_REPO: ${{ secrets.ARTIFACT_REGISTRY_REPO }}
-        run: | 
-          docker build -t ${{ secrets.ARTIFACT_REGISTRY_REPO }}/frontend:latest .
-          docker push ${{ secrets.ARTIFACT_REGISTRY_REPO }}/frontend:latest
+        - name: Login no Google Artifact Registry
+          env:
+            GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          run: | 
+            echo '${{ secrets.GOOGLE_CREDENTIALS }}' > key.json
+            cat key.json | docker login -u _json_key --password-stdin https://us-east4-docker.pkg.dev/
 
-  DeployProd:
+        - name: Build Imag & Push para Google Registry
+          env: 
+            ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
+            BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          run: | 
+            docker build -t ${{ secrets.ARTIFACT_REGISTRY }}/frontend:latest --build-arg BACKEND_URL=${{ secrets.BACKEND_URL }} .
+            docker push ${{ secrets.ARTIFACT_REGISTRY }}/frontend:latest
+
+        - name: Show file
+          run: cat src/App.js
+
+  Deploy:
     needs: Build
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repo
+      - name: Clone do Repositório
         uses: actions/checkout@v2
 
-      - name: Auth GCP AppEngine
+      - name: Autenticação no Google Cloud
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         uses: 'google-github-actions/auth@v0'
@@ -48,7 +56,6 @@ jobs:
             --region  ${{ secrets.GOOGLE_REGION }} \
             --image ${{ secrets.ARTIFACT_REGISTRY }}/frontend:latest \
             --platform managed \
-            --set-env-vars BACKEND_URL=${{ secrets.BACKEND_URL }} \
             --allow-unauthenticated \
             --project ${{ secrets.GOOGLE_PROJECT_ID }} \
             --format json
