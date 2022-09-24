@@ -4,9 +4,10 @@ FROM node:13-alpine
 WORKDIR /app
 # Adicionando `/app/node_modules/.bin` para o $PATH
 ENV PATH /app/node_modules/.bin:$PATH
+ENV BACKEND_URL www.google.com
 # Instalando dependências da aplicação e armazenando em cache.
 COPY package.json /app/package.json
 RUN npm install 
-RUN npm install react-scripts@3.3.1 -g --silent
+
 # Inicializa a aplicação
 CMD ["npm", "start"]
