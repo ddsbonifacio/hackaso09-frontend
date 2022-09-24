@@ -9,5 +9,7 @@ ENV BACKEND_URL www.google.com
 COPY package.json /app/package.json
 RUN npm install 
 
-# Inicializa a aplicação
-CMD ["npm", "start"]
+ENV PORT 8080
+ENV HOST 0.0.0.0
+EXPOSE 8080
+CMD sh -c "envsubst '\$PORT' < /etc/nginx/conf.d/configfile.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
